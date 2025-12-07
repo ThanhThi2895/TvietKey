@@ -11,7 +11,7 @@ struct OnboardingView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Content area
+            // Content area - fixed height so all pages are consistent
             Group {
                 switch currentPage {
                 case 0:
@@ -27,13 +27,12 @@ struct OnboardingView: View {
                     EmptyView()
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(height: 340)
 
             Divider()
 
-            // Bottom bar
+            // Bottom bar - always visible
             HStack {
-                // Page indicators
                 HStack(spacing: 8) {
                     ForEach(0..<3, id: \.self) { index in
                         Circle()
@@ -44,22 +43,19 @@ struct OnboardingView: View {
 
                 Spacer()
 
-                // Buttons
                 HStack(spacing: 12) {
                     if currentPage > 0 {
                         Button("Quay lại") {
                             currentPage -= 1
                         }
                     }
-
                     primaryButton
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(.vertical, 14)
         }
         .frame(width: 480)
-        .fixedSize(horizontal: false, vertical: true)
         .onAppear { startPermissionCheck() }
         .onDisappear { stopPermissionCheck() }
     }
@@ -104,7 +100,6 @@ struct OnboardingView: View {
 
     private func restartApp() {
         UserDefaults.standard.set(selectedMode.rawValue, forKey: SettingsKey.method)
-
         let path = Bundle.main.bundlePath
         let task = Process()
         task.launchPath = "/bin/sh"
@@ -143,15 +138,15 @@ struct OnboardingView: View {
 
 private struct WelcomePage: View {
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 16) {
             Spacer()
 
             Image(nsImage: NSApp.applicationIconImage)
                 .resizable()
-                .frame(width: 100, height: 100)
+                .frame(width: 80, height: 80)
 
             Text("Chào mừng đến với \(AppMetadata.name)")
-                .font(.system(size: 24, weight: .bold))
+                .font(.system(size: 22, weight: .bold))
 
             Text(AppMetadata.tagline)
                 .font(.body)
@@ -159,7 +154,8 @@ private struct WelcomePage: View {
 
             Spacer()
         }
-        .padding(40)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 40)
     }
 }
 
@@ -170,29 +166,27 @@ private struct PermissionPage: View {
     let onOpenSettings: () -> Void
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 16) {
             Spacer()
 
             Image(systemName: "hand.raised.fill")
-                .font(.system(size: 48))
+                .font(.system(size: 40))
                 .foregroundStyle(.blue)
 
             Text("Cần quyền Accessibility")
-                .font(.system(size: 24, weight: .bold))
+                .font(.system(size: 22, weight: .bold))
 
             Text("\(AppMetadata.name) cần quyền Accessibility để gõ tiếng Việt.")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .frame(maxWidth: 340)
 
-            // Steps
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 10) {
                 PermissionStep(number: 1, text: "Mở System Settings → Privacy & Security → Accessibility", isComplete: false)
                 PermissionStep(number: 2, text: "Bật \(AppMetadata.name) trong danh sách", isComplete: hasPermission)
                 PermissionStep(number: 3, text: "Nhấn \"Khởi động lại\" để áp dụng", isComplete: false)
             }
-            .padding(.top, 8)
+            .padding(.top, 4)
 
             Button(action: onOpenSettings) {
                 Label("Mở System Settings", systemImage: "gear")
@@ -201,7 +195,8 @@ private struct PermissionPage: View {
 
             Spacer()
         }
-        .padding(32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 40)
     }
 }
 
@@ -211,19 +206,19 @@ private struct PermissionStep: View {
     let isComplete: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             ZStack {
                 Circle()
                     .fill(isComplete ? Color.green : Color.secondary.opacity(0.2))
-                    .frame(width: 24, height: 24)
+                    .frame(width: 22, height: 22)
 
                 if isComplete {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(.white)
                 } else {
                     Text("\(number)")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(.secondary)
                 }
             }
@@ -241,15 +236,15 @@ private struct SetupPage: View {
     @Binding var selectedMode: InputMode
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 16) {
             Spacer()
 
             Image(systemName: "keyboard")
-                .font(.system(size: 48))
+                .font(.system(size: 40))
                 .foregroundStyle(.blue)
 
             Text("Chọn kiểu gõ")
-                .font(.system(size: 24, weight: .bold))
+                .font(.system(size: 22, weight: .bold))
 
             Text("Bạn có thể thay đổi trong menu bất cứ lúc nào.")
                 .font(.body)
@@ -264,12 +259,13 @@ private struct SetupPage: View {
                     )
                 }
             }
-            .frame(maxWidth: 280)
-            .padding(.top, 8)
+            .frame(maxWidth: 260)
+            .padding(.top, 4)
 
             Spacer()
         }
-        .padding(32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 40)
     }
 }
 
@@ -288,14 +284,12 @@ private struct ModeOption: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-
                 Spacer()
-
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.title2)
+                    .font(.title3)
                     .foregroundStyle(isSelected ? .blue : .secondary.opacity(0.4))
             }
-            .padding(12)
+            .padding(10)
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .fill(isSelected ? Color.blue.opacity(0.1) : Color.secondary.opacity(0.05))
