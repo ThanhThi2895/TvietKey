@@ -8,7 +8,9 @@ struct OnboardingView: View {
     @State private var selectedMode: InputMode = .telex
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-    private var stepIndex: Int { step >= 10 ? step - 10 : step }
+    private var isPostRestart: Bool { step >= 10 }
+    private var totalSteps: Int { isPostRestart ? 2 : 3 }
+    private var stepIndex: Int { isPostRestart ? step - 10 : step }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,6 +27,10 @@ struct OnboardingView: View {
         }
         .onReceive(timer) { _ in
             hasPermission = AXIsProcessTrusted()
+            // Auto advance to step 2 when permission granted
+            if step == 1 && hasPermission {
+                step = 2
+            }
         }
     }
 
@@ -34,7 +40,8 @@ struct OnboardingView: View {
     private var content: some View {
         switch step {
         case 0: WelcomeStep()
-        case 1: PermissionStep(hasPermission: hasPermission)
+        case 1: PermissionStep()
+        case 2: ReadyStep()
         case 10: SuccessStep()
         case 11: SetupStep(selectedMode: $selectedMode)
         default: EmptyView()
@@ -46,7 +53,7 @@ struct OnboardingView: View {
     private var footer: some View {
         HStack {
             HStack(spacing: 6) {
-                ForEach(0..<2, id: \.self) { i in
+                ForEach(0..<totalSteps, id: \.self) { i in
                     Circle()
                         .fill(i == stepIndex ? Color.accentColor : Color.secondary.opacity(0.3))
                         .frame(width: 6, height: 6)
@@ -54,7 +61,7 @@ struct OnboardingView: View {
             }
             Spacer()
             HStack(spacing: 12) {
-                if step == 1 && !hasPermission {
+                if step == 1 {
                     Button("Quay lại") { step = 0 }
                 }
                 primaryButton
@@ -70,11 +77,9 @@ struct OnboardingView: View {
         case 0:
             Button("Tiếp tục") { step = 1 }.buttonStyle(.borderedProminent)
         case 1:
-            if hasPermission {
-                Button("Khởi động lại") { restart() }.buttonStyle(.borderedProminent)
-            } else {
-                Button("Mở Cài đặt") { openAccessibilitySettings() }.buttonStyle(.borderedProminent)
-            }
+            Button("Mở Cài đặt") { openAccessibilitySettings() }.buttonStyle(.borderedProminent)
+        case 2:
+            Button("Khởi động lại") { restart() }.buttonStyle(.borderedProminent)
         case 10:
             Button("Tiếp tục") { step = 11 }.buttonStyle(.borderedProminent)
         case 11:
@@ -130,31 +135,41 @@ private struct WelcomeStep: View {
 }
 
 private struct PermissionStep: View {
-    let hasPermission: Bool
-
     var body: some View {
         VStack(spacing: 16) {
             Spacer()
-            Image(systemName: hasPermission ? "checkmark.shield.fill" : "hand.raised.fill")
+            Image(systemName: "hand.raised.fill")
                 .font(.system(size: 40))
-                .foregroundStyle(hasPermission ? .green : .orange)
-            Text(hasPermission ? "Đã cấp quyền" : "Cấp quyền Accessibility")
+                .foregroundStyle(.orange)
+            Text("Cấp quyền Accessibility")
                 .font(.system(size: 22, weight: .bold))
-            if hasPermission {
-                Text("Nhấn \"Khởi động lại\" để áp dụng.")
-                    .foregroundStyle(.secondary)
-            } else {
-                Text("Bật \(AppMetadata.name) trong System Settings để gõ tiếng Việt.")
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("Mở Privacy & Security → Accessibility", systemImage: "1.circle.fill")
-                    Label("Bật công tắc bên cạnh \(AppMetadata.name)", systemImage: "2.circle.fill")
-                }
-                .font(.callout)
+            Text("Bật \(AppMetadata.name) trong System Settings để gõ tiếng Việt.")
                 .foregroundStyle(.secondary)
-                .padding(.top, 8)
+                .multilineTextAlignment(.center)
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Mở Privacy & Security → Accessibility", systemImage: "1.circle.fill")
+                Label("Bật công tắc bên cạnh \(AppMetadata.name)", systemImage: "2.circle.fill")
             }
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .padding(.top, 8)
+            Spacer()
+        }
+        .padding(.horizontal, 40)
+    }
+}
+
+private struct ReadyStep: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            Spacer()
+            Image(systemName: "checkmark.shield.fill")
+                .font(.system(size: 40))
+                .foregroundStyle(.green)
+            Text("Đã cấp quyền")
+                .font(.system(size: 22, weight: .bold))
+            Text("Nhấn \"Khởi động lại\" để áp dụng.")
+                .foregroundStyle(.secondary)
             Spacer()
         }
         .padding(.horizontal, 40)
