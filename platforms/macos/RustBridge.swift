@@ -1,5 +1,24 @@
 import Foundation
 import Carbon
+import AppKit
+
+// MARK: - Debug Logging
+
+func debugLog(_ message: String) {
+    let timestamp = ISO8601DateFormatter().string(from: Date())
+    let logMessage = "[\(timestamp)] \(message)\n"
+    print(message)
+
+    // Also write to file
+    let logPath = "/tmp/gonhanh_debug.log"
+    if let handle = FileHandle(forWritingAtPath: logPath) {
+        handle.seekToEndOfFile()
+        handle.write(logMessage.data(using: .utf8)!)
+        handle.closeFile()
+    } else {
+        FileManager.default.createFile(atPath: logPath, contents: logMessage.data(using: .utf8))
+    }
+}
 
 // MARK: - FFI Result Struct (must match Rust #[repr(C)])
 
@@ -47,14 +66,14 @@ class RustBridge {
         guard !isInitialized else { return }
         ime_init()
         isInitialized = true
-        print("[RustBridge] Engine initialized")
+        debugLog("[RustBridge] Engine initialized")
     }
 
     /// Process key event
     /// Returns: (backspaceCount, newChars) or nil if no action needed
     static func processKey(keyCode: UInt16, caps: Bool, ctrl: Bool) -> (Int, [Character])? {
         guard isInitialized else {
-            print("[RustBridge] Engine not initialized!")
+            debugLog("[RustBridge] Engine not initialized!")
             return nil
         }
 
@@ -92,13 +111,13 @@ class RustBridge {
     /// Set input method (0=Telex, 1=VNI)
     static func setMethod(_ method: Int) {
         ime_method(UInt8(method))
-        print("[RustBridge] Method set to: \(method == 0 ? "Telex" : "VNI")")
+        debugLog("[RustBridge] Method set to: \(method == 0 ? "Telex" : "VNI")")
     }
 
     /// Enable/disable engine
     static func setEnabled(_ enabled: Bool) {
         ime_enabled(enabled)
-        print("[RustBridge] Engine enabled: \(enabled)")
+        debugLog("[RustBridge] Engine enabled: \(enabled)")
     }
 
     /// Set modern orthography (true=oà, false=òa)
@@ -126,32 +145,99 @@ class KeyboardHookManager {
     func start() {
         guard !isRunning else { return }
 
-        // Initialize Rust engine
-        RustBridge.initialize()
+        debugLog("[KeyboardHook] Starting...")
 
-        // Create event tap
-        let eventMask = (1 << CGEventType.keyDown.rawValue)
+        // Check accessibility permission
+        let trusted = AXIsProcessTrusted()
+        debugLog("[KeyboardHook] Accessibility trusted: \(trusted)")
 
-        guard let tap = CGEvent.tapCreate(
-            tap: .cgSessionEventTap,
-            place: .headInsertEventTap,
-            options: .defaultTap,
-            eventsOfInterest: CGEventMask(eventMask),
-            callback: keyboardCallback,
-            userInfo: nil
-        ) else {
-            print("[KeyboardHook] Failed to create event tap. Check Accessibility permissions.")
+        if !trusted {
+            // Prompt user for permission
+            let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+            AXIsProcessTrustedWithOptions(options)
+            debugLog("[KeyboardHook] Requested accessibility permission. Please grant and restart app.")
             return
         }
 
-        eventTap = tap
-        runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+        // Initialize Rust engine
+        RustBridge.initialize()
+
+        // Create event tap for keyDown events
+        // Use listenOnly option which doesn't require as strict permissions
+        let eventMask: CGEventMask = (1 << CGEventType.keyDown.rawValue)
+
+        debugLog("[KeyboardHook] Creating event tap...")
+
+        // Try creating tap - use .cghidEventTap for better compatibility
+        var tap: CFMachPort?
+
+        // First try session tap with defaultTap (can modify events)
+        tap = CGEvent.tapCreate(
+            tap: .cghidEventTap,
+            place: .headInsertEventTap,
+            options: .defaultTap,
+            eventsOfInterest: eventMask,
+            callback: keyboardCallback,
+            userInfo: nil
+        )
+
+        if tap == nil {
+            debugLog("[KeyboardHook] cghidEventTap failed, trying cgSessionEventTap...")
+            tap = CGEvent.tapCreate(
+                tap: .cgSessionEventTap,
+                place: .headInsertEventTap,
+                options: .defaultTap,
+                eventsOfInterest: eventMask,
+                callback: keyboardCallback,
+                userInfo: nil
+            )
+        }
+
+        if tap == nil {
+            debugLog("[KeyboardHook] cgSessionEventTap failed, trying cgAnnotatedSessionEventTap...")
+            tap = CGEvent.tapCreate(
+                tap: .cgAnnotatedSessionEventTap,
+                place: .headInsertEventTap,
+                options: .defaultTap,
+                eventsOfInterest: eventMask,
+                callback: keyboardCallback,
+                userInfo: nil
+            )
+        }
+
+        guard let finalTap = tap else {
+            debugLog("[KeyboardHook] ALL event tap methods FAILED!")
+            debugLog("[KeyboardHook] Opening System Settings for Input Monitoring...")
+
+            // Show alert and open System Settings
+            DispatchQueue.main.async {
+                let alert = NSAlert()
+                alert.messageText = "Cần quyền Input Monitoring"
+                alert.informativeText = "GoNhanh cần quyền Input Monitoring để gõ tiếng Việt.\n\n1. Mở System Settings > Privacy & Security > Input Monitoring\n2. Bật GoNhanh\n3. Khởi động lại app"
+                alert.alertStyle = .warning
+                alert.addButton(withTitle: "Mở System Settings")
+                alert.addButton(withTitle: "Hủy")
+
+                if alert.runModal() == .alertFirstButtonReturn {
+                    // Open Input Monitoring settings
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
+            }
+            return
+        }
+
+        debugLog("[KeyboardHook] Event tap created successfully")
+
+        eventTap = finalTap
+        runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, finalTap, 0)
 
         if let source = runLoopSource {
             CFRunLoopAddSource(CFRunLoopGetCurrent(), source, .commonModes)
-            CGEvent.tapEnable(tap: tap, enable: true)
+            CGEvent.tapEnable(tap: finalTap, enable: true)
             isRunning = true
-            print("[KeyboardHook] Started")
+            debugLog("[KeyboardHook] Started successfully, listening for keys...")
         }
     }
 
@@ -169,7 +255,11 @@ class KeyboardHookManager {
         eventTap = nil
         runLoopSource = nil
         isRunning = false
-        print("[KeyboardHook] Stopped")
+        debugLog("[KeyboardHook] Stopped")
+    }
+
+    func getTap() -> CFMachPort? {
+        return eventTap
     }
 }
 
@@ -182,9 +272,18 @@ private func keyboardCallback(
     refcon: UnsafeMutableRawPointer?
 ) -> Unmanaged<CGEvent>? {
 
+    // Handle tap disabled event - re-enable
+    if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+        debugLog("[KeyboardHook] Event tap was disabled, re-enabling...")
+        if let tap = KeyboardHookManager.shared.getTap() {
+            CGEvent.tapEnable(tap: tap, enable: true)
+        }
+        return Unmanaged.passUnretained(event)
+    }
+
     // Only handle key down
     guard type == .keyDown else {
-        return Unmanaged.passRetained(event)
+        return Unmanaged.passUnretained(event)
     }
 
     let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
@@ -194,9 +293,11 @@ private func keyboardCallback(
     let ctrl = flags.contains(.maskCommand) || flags.contains(.maskControl) ||
                flags.contains(.maskAlternate)
 
+    debugLog("[KeyboardHook] Key: \(keyCode), caps=\(caps), ctrl=\(ctrl)")
+
     // Process key through Rust engine
     if let (backspace, chars) = RustBridge.processKey(keyCode: keyCode, caps: caps, ctrl: ctrl) {
-        print("[KeyboardHook] Processing: backspace=\(backspace), chars=\(chars)")
+        debugLog("[KeyboardHook] Output: backspace=\(backspace), chars=\(chars)")
 
         // Send backspaces
         for _ in 0..<backspace {

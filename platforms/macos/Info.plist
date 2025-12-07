@@ -26,5 +26,7 @@
     <string>Copyright © 2024 GoNhanh Contributors. All rights reserved.</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>GoNhanh needs access to send keyboard events for Vietnamese input.</string>
 </dict>
 </plist>
