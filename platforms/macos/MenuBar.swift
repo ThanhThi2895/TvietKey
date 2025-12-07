@@ -141,27 +141,22 @@ class MenuBarController {
     }
 
     private func createHeaderView() -> NSView {
-        let view = NSView(frame: NSRect(x: 0, y: 0, width: 220, height: 50))
+        let view = NSView(frame: NSRect(x: 0, y: 0, width: 220, height: 36))
 
         // App name
         let name = NSTextField(labelWithString: AppMetadata.name)
         name.font = .systemFont(ofSize: 13, weight: .bold)
-        name.frame = NSRect(x: 14, y: 28, width: 120, height: 16)
+        name.frame = NSRect(x: 14, y: 10, width: 120, height: 16)
         view.addSubview(name)
-
-        // Version
-        let version = NSTextField(labelWithString: "v\(AppMetadata.version)")
-        version.font = .systemFont(ofSize: 10)
-        version.textColor = .tertiaryLabelColor
-        version.frame = NSRect(x: 14, y: 12, width: 50, height: 14)
-        view.addSubview(version)
 
         // Toggle switch
         let toggle = NSSwitch()
         toggle.state = isEnabled ? .on : .off
+        toggle.controlSize = .regular
         toggle.target = self
         toggle.action = #selector(toggleEnabled)
-        toggle.frame = NSRect(x: 170, y: 16, width: 38, height: 20)
+        toggle.sizeToFit()
+        toggle.frame.origin = NSPoint(x: 170, y: 6)
         view.addSubview(toggle)
 
         return view
