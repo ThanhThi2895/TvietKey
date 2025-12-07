@@ -232,7 +232,7 @@ class MenuBarController {
             onboardingWindow = NSWindow(contentViewController: controller)
             onboardingWindow?.title = AppMetadata.name
             onboardingWindow?.styleMask = [.titled, .closable]
-            onboardingWindow?.setContentSize(NSSize(width: 480, height: 440))
+            onboardingWindow?.setContentSize(NSSize(width: 480, height: 420))
             onboardingWindow?.center()
         }
         onboardingWindow?.makeKeyAndOrderFront(nil)
