@@ -321,12 +321,9 @@ private func keyboardCallback(
         let charsStr = String(chars)
         debugLog("[KeyboardHook] Rust returned: backspace=\(backspace), chars=\"\(charsStr)\" (count=\(chars.count))")
 
-        // Use atomic text replacement to fix Chrome/Excel autocomplete issues
-        // Instead of backspace+type (which can cause "dính chữ"), we:
-        // 1. Select text with Shift+Left
-        // 2. Type replacement (automatically replaces selection)
-        let useSelection = needsSelectionWorkaround()
-        debugLog("[KeyboardHook] Method: \(useSelection ? "Selection" : "Backspace")")
+        // Smart text replacement based on focused element detection
+        // - Default: Backspace (fast, no flicker)
+        // - AXComboBox/AXSearchField: Selection (fixes "dính chữ")
         sendTextReplacement(backspaceCount: backspace, chars: chars)
 
         // Consume original event
@@ -339,35 +336,137 @@ private func keyboardCallback(
     return Unmanaged.passUnretained(event)
 }
 
-// MARK: - App Detection
+// MARK: - Focused Element Detection
 
-/// Check if current app has autocomplete issues that need Shift+Left workaround
-private func needsSelectionWorkaround() -> Bool {
+/// Information about the currently focused UI element
+private struct FocusedElementInfo {
+    let role: String?
+    let subrole: String?
+    let roleDescription: String?
+    let bundleId: String
+}
+
+/// Get information about the currently focused UI element using Accessibility API
+private func getFocusedElementInfo() -> FocusedElementInfo? {
     guard let frontApp = NSWorkspace.shared.frontmostApplication else {
-        return false
+        return nil
     }
 
     let bundleId = frontApp.bundleIdentifier ?? ""
 
-    // Apps with autocomplete that cause "dính chữ" issue
-    let autocompleteApps = [
-        "com.google.Chrome",
-        "com.microsoft.edgemac",
-        "com.microsoft.Excel",
-        "com.microsoft.Word",
-        "com.microsoft.Powerpoint",
-        "com.apple.Safari",
-        "org.mozilla.firefox",
-        "com.google.android.studio",
-    ]
+    // Get system-wide accessibility element
+    let systemWide = AXUIElementCreateSystemWide()
 
-    for id in autocompleteApps {
-        if bundleId.hasPrefix(id) {
-            return true
+    // Get focused element
+    var focusedElement: CFTypeRef?
+    let focusError = AXUIElementCopyAttributeValue(
+        systemWide,
+        kAXFocusedUIElementAttribute as CFString,
+        &focusedElement
+    )
+
+    guard focusError == .success, let element = focusedElement else {
+        debugLog("[AX] Failed to get focused element: \(focusError.rawValue)")
+        return FocusedElementInfo(role: nil, subrole: nil, roleDescription: nil, bundleId: bundleId)
+    }
+
+    // Get role
+    var roleValue: CFTypeRef?
+    AXUIElementCopyAttributeValue(
+        element as! AXUIElement,
+        kAXRoleAttribute as CFString,
+        &roleValue
+    )
+    let role = roleValue as? String
+
+    // Get subrole
+    var subroleValue: CFTypeRef?
+    AXUIElementCopyAttributeValue(
+        element as! AXUIElement,
+        kAXSubroleAttribute as CFString,
+        &subroleValue
+    )
+    let subrole = subroleValue as? String
+
+    // Get role description (more human-readable)
+    var roleDescValue: CFTypeRef?
+    AXUIElementCopyAttributeValue(
+        element as! AXUIElement,
+        kAXRoleDescriptionAttribute as CFString,
+        &roleDescValue
+    )
+    let roleDesc = roleDescValue as? String
+
+    debugLog("[AX] Focused: role=\(role ?? "nil"), subrole=\(subrole ?? "nil"), desc=\(roleDesc ?? "nil"), app=\(bundleId)")
+
+    return FocusedElementInfo(role: role, subrole: subrole, roleDescription: roleDesc, bundleId: bundleId)
+}
+
+/// Replacement method type
+private enum ReplacementMethod {
+    case backspace  // Default: fast, no flicker
+    case selection  // For autocomplete fields: prevents "dính chữ"
+}
+
+/// Determine the best text replacement method based on focused element
+///
+/// Strategy:
+/// 1. AXComboBox → Selection (address bars, dropdowns)
+/// 2. AXTextField in Chrome/Safari/Arc → Selection (address bar uses AXTextField)
+/// 3. AXSearchField → Selection (search boxes with autocomplete)
+/// 4. JetBrains IDEs → Selection (code autocomplete)
+/// 5. Microsoft Excel → Selection (cell autocomplete)
+/// 6. Everything else → Backspace (default, ~90% of cases)
+private func getReplacementMethod() -> ReplacementMethod {
+    guard let info = getFocusedElementInfo() else {
+        return .backspace // Default if can't detect
+    }
+
+    // Rule 1: ComboBox = address bar, dropdown → always Selection
+    if info.role == "AXComboBox" {
+        debugLog("[Method] AXComboBox detected → Selection")
+        return .selection
+    }
+
+    // Rule 2: Chrome/Safari/Arc address bar (AXTextField with autocomplete)
+    // Chrome uses AXTextField for omnibox, not AXComboBox
+    let browserBundles = ["com.google.Chrome", "com.apple.Safari", "company.thebrowser.Browser"]
+    if browserBundles.contains(info.bundleId) {
+        // In browsers, AXTextField is likely the address bar (has autocomplete)
+        // AXTextArea or AXWebArea is the page content (no autocomplete issue)
+        if info.role == "AXTextField" {
+            debugLog("[Method] Browser AXTextField (address bar) → Selection")
+            return .selection
         }
     }
 
-    return false
+    // Rule 3: Search field with autocomplete → Selection
+    if info.role == "AXTextField" && info.subrole == "AXSearchField" {
+        debugLog("[Method] AXSearchField detected → Selection")
+        return .selection
+    }
+
+    // Rule 4: JetBrains IDEs (IntelliJ, WebStorm, etc.) → Selection
+    if info.bundleId.hasPrefix("com.jetbrains") {
+        debugLog("[Method] JetBrains IDE detected → Selection")
+        return .selection
+    }
+
+    // Rule 5: Microsoft Excel → Selection (cell autocomplete)
+    if info.bundleId == "com.microsoft.Excel" {
+        debugLog("[Method] Excel detected → Selection")
+        return .selection
+    }
+
+    // Rule 6: Microsoft Word → Selection (suggestion popup)
+    if info.bundleId == "com.microsoft.Word" {
+        debugLog("[Method] Word detected → Selection")
+        return .selection
+    }
+
+    // Default: Backspace (fast, no flicker)
+    debugLog("[Method] Default → Backspace")
+    return .backspace
 }
 
 // MARK: - Key Codes
@@ -379,15 +478,23 @@ private enum KeyCode {
 
 // MARK: - Send Keys
 
-/// Smart text replacement - uses different methods based on app type
-/// - Default: Use backspace (works for most apps including Terminal)
-/// - Autocomplete apps (Chrome/Excel): Use Shift+Left selection (fixes "dính chữ")
+/// Smart text replacement - uses different methods based on focused element type
+///
+/// Strategy:
+/// - Default: Backspace (fast, no flicker, works for ~90% of cases)
+/// - Autocomplete contexts: Selection (prevents "dính chữ" in address bars, Excel, etc.)
+///
+/// Detection is done via Accessibility API to check the focused element's role,
+/// which is more accurate than app-based detection.
 private func sendTextReplacement(backspaceCount: Int, chars: [Character]) {
     // Run synchronously to ensure events are sent before callback returns
     // This prevents race condition where next key arrives before backspace is processed
-    if needsSelectionWorkaround() {
+    let method = getReplacementMethod()
+
+    switch method {
+    case .selection:
         sendTextReplacementWithSelection(backspaceCount: backspaceCount, chars: chars)
-    } else {
+    case .backspace:
         sendTextReplacementWithBackspace(backspaceCount: backspaceCount, chars: chars)
     }
 }
