@@ -476,7 +476,7 @@ private func detectMethod() -> (Method, (UInt32, UInt32, UInt32)) {
     let terminals = ["com.microsoft.VSCode", "com.apple.Terminal",
                      "com.googlecode.iterm2", "io.alacritty", "com.github.wez.wezterm",
                      "com.google.antigravity", "dev.warp.Warp-Stable"]
-    if terminals.contains(bundleId) { Log.method("slow:term"); return (.slow, (2500, 6000, 2500)) }
+    if terminals.contains(bundleId) { Log.method("slow:term"); return (.slow, (3000, 8000, 3000)) }
 
     Log.method("fast")
     return (.fast, (200, 800, 500))
