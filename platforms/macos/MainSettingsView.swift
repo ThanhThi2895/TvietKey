@@ -90,12 +90,12 @@ class AppState: ObservableObject {
         ("com.apple.Terminal", "Terminal", "/System/Applications/Utilities/Terminal.app"),
         ("com.googlecode.iterm2", "iTerm", "/Applications/iTerm.app"),
         ("com.microsoft.VSCode", "Visual Studio Code", "/Applications/Visual Studio Code.app"),
-        ("com.tableplus.TablePlus", "TablePlus", "/Applications/TablePlus.app"),
+        ("com.tinyapp.TablePlus", "TablePlus", "/Applications/TablePlus.app"),
         ("com.jetbrains.datagrip", "DataGrip", "/Applications/DataGrip.app"),
         ("com.apple.dt.Xcode", "Xcode", "/Applications/Xcode.app"),
         ("com.sequel-ace.sequel-ace", "Sequel Ace", "/Applications/Sequel Ace.app"),
         ("com.postmanlabs.mac", "Postman", "/Applications/Postman.app"),
-        ("com.termius.mac", "Termius", "/Applications/Termius.app"),
+        ("com.termius-dmg.mac", "Termius", "/Applications/Termius.app"),
     ]
 
     init() {
