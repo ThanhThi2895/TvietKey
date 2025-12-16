@@ -532,15 +532,15 @@ struct SettingsPageView: View {
             Spacer()
         }
         .contentShape(Rectangle())
-        .onAppear {
-            // Prevent auto-focus on TextFields when settings window opens
-            // Need delay because window may not be ready immediately
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                if focusedField == nil {
-                    NSApp.keyWindow?.makeFirstResponder(nil)
-                }
-            }
-        }
+        .onTapGesture { clearSelection() }
+        .onAppear { DispatchQueue.main.async { clearSelection() } }
+    }
+
+    private func clearSelection() {
+        selectedShortcutId = nil
+        selectedAppId = nil
+        focusedField = nil
+        NSApp.keyWindow?.makeFirstResponder(nil)
     }
 
     private func showAppPicker() {
