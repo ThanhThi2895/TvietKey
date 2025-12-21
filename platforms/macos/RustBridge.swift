@@ -1167,8 +1167,8 @@ private func detectMethod() -> (InjectionMethod, (UInt32, UInt32, UInt32)) {
         return (.axDirect, (0, 0, 0))
     }
 
-    // Firefox-based browsers - use AX API for address bar
-    // Firefox has good accessibility support, AX direct works better than selection
+    // Firefox-based browsers - use AX API
+    // Firefox returns AXWindow for focused element, but axDirect still works
     let firefoxBrowsers = [
         "org.mozilla.firefox",                      // Firefox
         "org.mozilla.firefoxdeveloperedition",      // Firefox Developer
@@ -1180,7 +1180,7 @@ private func detectMethod() -> (InjectionMethod, (UInt32, UInt32, UInt32)) {
         "net.mullvad.mullvadbrowser",               // Mullvad Browser
         "app.zen-browser.zen"                       // Zen Browser (Firefox-based)
     ]
-    if firefoxBrowsers.contains(bundleId) && role == "AXTextField" {
+    if firefoxBrowsers.contains(bundleId) && (role == "AXTextField" || role == "AXWindow") {
         Log.method("ax:firefox")
         return (.axDirect, (0, 0, 0))
     }
