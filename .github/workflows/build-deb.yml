@@ -1,0 +1,117 @@
+name: Build Debian Package
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths:
+      - 'platforms/linux/**'
+      - 'core/**'
+      - 'debian/**'
+      - '.github/workflows/build-deb.yml'
+  pull_request:
+    paths:
+      - 'platforms/linux/**'
+      - 'core/**'
+      - 'debian/**'
+  workflow_dispatch:
+
+jobs:
+  build-deb:
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: ['22.04', '24.04']
+    runs-on: ubuntu-${{ matrix.ubuntu }}
+    name: Build on Ubuntu ${{ matrix.ubuntu }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            debhelper \
+            devscripts \
+            cmake \
+            pkg-config \
+            extra-cmake-modules \
+            fcitx5-modules-dev \
+            libfcitx5core-dev \
+            libfcitx5config-dev \
+            libfcitx5utils-dev \
+            gettext \
+            lintian
+
+      - name: Build Rust core library
+        run: |
+          cd core
+          cargo build --release
+          ls -la target/release/
+
+      - name: Build Debian package
+        run: |
+          dpkg-buildpackage -us -uc -b
+
+      - name: Run lintian checks
+        run: |
+          lintian --pedantic ${{ github.workspace }}/../fcitx5-gonhanh_*.deb || true
+
+      - name: List build artifacts
+        run: |
+          ls -la ${{ github.workspace }}/../fcitx5-gonhanh_*
+
+      - name: Test package installation
+        run: |
+          sudo dpkg -i ${{ github.workspace }}/../fcitx5-gonhanh_*.deb || true
+          sudo apt-get install -f -y
+          dpkg -l | grep fcitx5-gonhanh
+
+      - name: Run integration tests
+        run: |
+          bash platforms/linux/tests/integration-test.sh
+        continue-on-error: true
+
+      - name: Upload .deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fcitx5-gonhanh-ubuntu-${{ matrix.ubuntu }}
+          path: ${{ github.workspace }}/../fcitx5-gonhanh_*.deb
+          if-no-files-found: error
+
+  release:
+    needs: build-deb
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Rename artifacts for release
+        run: |
+          mkdir -p release
+          for dir in artifacts/fcitx5-gonhanh-ubuntu-*; do
+            version=$(basename "$dir" | sed 's/fcitx5-gonhanh-ubuntu-//')
+            for deb in "$dir"/*.deb; do
+              filename=$(basename "$deb")
+              new_name="${filename%.deb}_ubuntu${version}.deb"
+              cp "$deb" "release/$new_name"
+            done
+          done
+          ls -la release/
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*.deb
+          fail_on_unmatched_files: false

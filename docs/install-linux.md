@@ -56,6 +56,29 @@ gn uninstall
 
 ---
 
+## Kiểm tra & Kiểm định
+
+### Automated Testing
+
+Chạy bộ kiểm tra toàn diện (15 tests):
+
+```bash
+platforms/linux/tests/integration-test.sh
+```
+
+Kiểm tra: package installation, files, environment, CLI tools, Fcitx5 integration.
+
+### Manual Testing
+
+Xem danh sách kiểm tra đầy đủ tại [platforms/linux/TESTING.md](../platforms/linux/TESTING.md) bao gồm:
+- Installation (từ .deb package hoặc source)
+- Configuration testing
+- App compatibility
+- GNOME X11/Wayland specific tests
+- Performance validation
+
+---
+
 ## Xử lý sự cố
 
 ### Chẩn đoán tự động

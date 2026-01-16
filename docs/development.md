@@ -522,6 +522,28 @@ time cargo test -p core
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for detailed guidelines.
 
+## Linux Platform
+
+### Testing
+
+Run automated integration tests (15 tests covering package, files, environment, CLI, Fcitx5):
+
+```bash
+platforms/linux/tests/integration-test.sh
+```
+
+Manual testing checklist: [`platforms/linux/TESTING.md`](../platforms/linux/TESTING.md)
+
+### Building Debian Package
+
+```bash
+cd platforms/linux
+./scripts/build.sh      # Builds .deb package
+./scripts/install.sh    # Installs locally
+```
+
+**CI/CD:** Automated builds on Ubuntu 22.04 and 24.04 via `.github/workflows/build-deb.yml`
+
 ## Release Process
 
 Releases are automated via GitHub Actions:
@@ -538,8 +560,7 @@ git push origin v1.2.3
 
 # 4. GitHub Actions automatically:
 #    - Runs full test suite
-#    - Builds release binaries
-#    - Creates DMG installer
+#    - Builds release binaries (macOS DMG, Linux .deb)
 #    - Publishes release
 ```
 
