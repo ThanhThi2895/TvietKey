@@ -1,0 +1,40 @@
+Source: fcitx5-gonhanh
+Section: utils
+Priority: optional
+Maintainer: Khaphan Space <khaphanspace@gmail.com>
+Build-Depends: debhelper-compat (= 13),
+               cmake (>= 3.16),
+               extra-cmake-modules,
+               libfcitx5core-dev (>= 5.0.0),
+               libfcitx5config-dev (>= 5.0.0),
+               libfcitx5utils-dev (>= 5.0.0),
+               fcitx5-modules-dev (>= 5.0.0),
+               gettext,
+               cargo,
+               rustc (>= 1.70.0),
+               pkg-config
+Standards-Version: 4.6.2
+Homepage: https://github.com/khaphanspace/gonhanh.org
+Vcs-Git: https://github.com/khaphanspace/gonhanh.org.git
+Vcs-Browser: https://github.com/khaphanspace/gonhanh.org
+Rules-Requires-Root: no
+
+Package: fcitx5-gonhanh
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         fcitx5 (>= 5.0.0),
+         fcitx5-modules (>= 5.0.0)
+Recommends: gnome-shell-extension-kimpanel,
+            im-config
+Description: Vietnamese input method for Fcitx5
+ Gõ Nhanh is a modern Vietnamese input method addon for Fcitx5,
+ featuring:
+  * Fast and accurate Vietnamese typing
+  * Support for multiple input methods (Telex, VNI)
+  * Auto-tone correction
+  * Smart word suggestions
+  * Integration with GNOME, KDE, and other desktop environments
+ .
+ This package provides the Fcitx5 addon and CLI tools for managing
+ Vietnamese input on Ubuntu and other Debian-based systems.

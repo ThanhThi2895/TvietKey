@@ -1,0 +1,39 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE = 1
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export CARGO_HOME = $(CURDIR)/debian/cargo
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	# Build Rust core library first
+	cd core && cargo build --release
+	# Then configure CMake for addon
+	dh_auto_configure -- \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DGONHANH_CORE_LIB=$(CURDIR)/core/target/release/libgonhanh_core.so
+
+override_dh_auto_build:
+	# Core already built in configure step
+	# Build addon with CMake
+	dh_auto_build
+
+override_dh_auto_install:
+	dh_auto_install
+	# Install CLI tool
+	install -Dm755 platforms/linux/scripts/gonhanh-cli.sh \
+		$(CURDIR)/debian/fcitx5-gonhanh/usr/bin/gn
+	# Install environment template
+	install -Dm644 platforms/linux/data/90-gonhanh.conf.template \
+		$(CURDIR)/debian/fcitx5-gonhanh/usr/share/gonhanh/90-gonhanh.conf.template
+	# Install version file
+	echo "1.0.0" > $(CURDIR)/debian/fcitx5-gonhanh/usr/share/gonhanh/version
+
+override_dh_auto_clean:
+	dh_auto_clean
+	# Clean Rust build artifacts
+	cd core && cargo clean || true
+	rm -rf $(CARGO_HOME)

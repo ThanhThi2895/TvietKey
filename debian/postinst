@@ -1,0 +1,53 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        # Restart Fcitx5 if running to reload addons
+        if pgrep -x fcitx5 > /dev/null; then
+            echo "Restarting Fcitx5 to load Gõ Nhanh addon..."
+            fcitx5-remote -r 2>/dev/null || true
+        fi
+
+        # Inform user about next steps
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "  Gõ Nhanh installed successfully!"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "Next steps:"
+        echo "  1. Run: gn fix-env"
+        echo "     (Configures environment variables)"
+        echo ""
+        echo "  2. Log out and log in again"
+        echo "     (Applies environment changes)"
+        echo ""
+        echo "  3. Run: fcitx5-configtool"
+        echo "     (Add 'Gõ Nhanh' to your input methods)"
+        echo ""
+        echo "  4. Use Ctrl+Space to switch input methods"
+        echo ""
+        echo "Diagnostics & troubleshooting:"
+        echo "  • gn diagnose   - Check system configuration"
+        echo "  • gn fix-env    - Fix environment variables"
+        echo "  • gn fix-gnome  - Fix GNOME Wayland (if needed)"
+        echo "  • gn help       - Show all commands"
+        echo ""
+        echo "Documentation:"
+        echo "  https://github.com/khaphanspace/gonhanh.org"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

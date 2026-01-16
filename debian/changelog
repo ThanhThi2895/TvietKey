@@ -1,0 +1,21 @@
+fcitx5-gonhanh (1.0.0-1) unstable; urgency=medium
+
+  * Initial release (Closes: #XXXXXX)
+  * Features:
+    - Vietnamese input method addon for Fcitx5
+    - Support for Telex and VNI input methods
+    - Auto-tone correction and word suggestions
+    - CLI tool (gn) for quick method switching
+    - Automatic environment configuration for Ubuntu
+    - GNOME Wayland KIMPanel integration
+    - Comprehensive diagnostic and repair commands
+  * Ubuntu compatibility:
+    - Auto-configures IM environment variables
+    - Detects desktop environment and session type
+    - Provides self-service diagnostics (gn diagnose)
+    - Repair commands (gn fix-env, gn fix-gnome)
+  * Supported platforms:
+    - Ubuntu 22.04 LTS and later
+    - Debian-based distributions with Fcitx5 5.0+
+
+ -- Khaphan Space <khaphanspace@gmail.com>  Thu, 16 Jan 2026 16:00:00 +0700
