@@ -1,0 +1,13 @@
+Package: fcitx5-gonhanh-dbgsym
+Package-Type: ddeb
+Source: fcitx5-gonhanh
+Version: 1.0.0-1
+Auto-Built-Package: debug-symbols
+Architecture: amd64
+Maintainer: Khaphan Space <khaphanspace@gmail.com>
+Installed-Size: 154
+Depends: fcitx5-gonhanh (= 1.0.0-1)
+Section: debug
+Priority: optional
+Description: debug symbols for fcitx5-gonhanh
+Build-Ids: b2d05f268132ae197d672bb5f3ac1977544196cb

@@ -4,23 +4,28 @@
 //! Only restores to English when raw_input is a known English word.
 
 use std::collections::HashSet;
-use std::sync::LazyLock;
+use std::sync::OnceLock;
 
 /// Embedded English word list (10k + double telex patterns)
 const ENGLISH_WORDS: &str = include_str!("english_dict_merged.txt");
 
-/// HashSet for O(1) lookup
-static DICT: LazyLock<HashSet<&'static str>> = LazyLock::new(|| {
-    ENGLISH_WORDS
-        .lines()
-        .filter(|line| !line.is_empty())
-        .collect()
-});
+/// HashSet for O(1) lookup (initialized on first access)
+static DICT: OnceLock<HashSet<&'static str>> = OnceLock::new();
+
+/// Get or initialize the dictionary
+fn get_dict() -> &'static HashSet<&'static str> {
+    DICT.get_or_init(|| {
+        ENGLISH_WORDS
+            .lines()
+            .filter(|line| !line.is_empty())
+            .collect()
+    })
+}
 
 /// Check if a word is in the English dictionary (case-insensitive)
 pub fn is_english_word(word: &str) -> bool {
     let lower = word.to_lowercase();
-    DICT.contains(lower.as_str())
+    get_dict().contains(lower.as_str())
 }
 
 #[cfg(test)]
@@ -52,6 +57,6 @@ mod tests {
 
     #[test]
     fn test_dict_size() {
-        assert!(DICT.len() >= 17000); // Should have ~18k words (10k + double telex)
+        assert!(get_dict().len() >= 17000); // Should have ~18k words (10k + double telex)
     }
 }

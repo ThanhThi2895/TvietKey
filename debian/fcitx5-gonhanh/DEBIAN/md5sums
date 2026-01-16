@@ -1,0 +1,9 @@
+5548467d5bd49ee35f6d188a7dd27237  usr/bin/gn
+49c97392c798717a27ec63505fed6537  usr/lib/x86_64-linux-gnu/fcitx5/gonhanh.so
+6ad8955bc61cdde3d0c16431cfdb8a79  usr/lib/x86_64-linux-gnu/libgonhanh_core.so
+ca0dfaadcdbf3baa040a9741337af7a0  usr/share/doc/fcitx5-gonhanh/changelog.Debian.gz
+77900a87d1ee55443a6ba7360c3d30e7  usr/share/doc/fcitx5-gonhanh/copyright
+0634c1f9a811e5c2d995365f4029cb49  usr/share/fcitx5/addon/gonhanh.conf
+5782f72d49f02895a0c6338e0e065e0e  usr/share/fcitx5/addon/inputmethod/gonhanh.conf
+21012d29ff0f39fb6142132498f46e2a  usr/share/gonhanh/90-gonhanh.conf.template
+c9e47dbb0e1927076ed7b2e1ec157be7  usr/share/gonhanh/version

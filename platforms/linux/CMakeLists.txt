@@ -9,8 +9,11 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(Fcitx5Core REQUIRED IMPORTED_TARGET Fcitx5Core)
 pkg_check_modules(Fcitx5Module REQUIRED IMPORTED_TARGET Fcitx5Module)
 
-# Rust core library path
-set(RUST_LIB_DIR "${CMAKE_SOURCE_DIR}/../../core/target/release")
+# Rust core library path (can be overridden via -DRUST_LIB_DIR=...)
+if(NOT DEFINED RUST_LIB_DIR)
+    # Default: relative to platforms/linux for local builds
+    set(RUST_LIB_DIR "${CMAKE_SOURCE_DIR}/../../core/target/release")
+endif()
 set(RUST_LIB_NAME "gonhanh_core")
 
 # Check if Rust library exists

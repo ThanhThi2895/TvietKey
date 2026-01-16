@@ -5,7 +5,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 # Colors
 RED='\033[0;31m'
@@ -36,9 +36,14 @@ check_dependencies() {
     command -v rustc &> /dev/null || missing+=("rustc")
     command -v pkg-config &> /dev/null || missing+=("pkg-config")
 
-    # Fcitx5 development files
-    if ! pkg-config --exists fcitx5 2>/dev/null; then
+    # Fcitx5 development files (use Fcitx5Core with capital F)
+    if ! pkg-config --exists Fcitx5Core 2>/dev/null; then
         missing+=("libfcitx5core-dev" "libfcitx5config-dev" "libfcitx5utils-dev" "fcitx5-modules-dev")
+    fi
+
+    # xkbcommon for keycode mapping
+    if ! pkg-config --exists xkbcommon 2>/dev/null; then
+        missing+=("libxkbcommon-dev")
     fi
 
     if [ ${#missing[@]} -gt 0 ]; then

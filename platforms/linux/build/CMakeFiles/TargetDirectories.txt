@@ -1,0 +1,8 @@
+/home/work/Desktop/my-project/TvietKey/platforms/linux/build/CMakeFiles/gonhanh.dir
+/home/work/Desktop/my-project/TvietKey/platforms/linux/build/CMakeFiles/install-user.dir
+/home/work/Desktop/my-project/TvietKey/platforms/linux/build/CMakeFiles/edit_cache.dir
+/home/work/Desktop/my-project/TvietKey/platforms/linux/build/CMakeFiles/rebuild_cache.dir
+/home/work/Desktop/my-project/TvietKey/platforms/linux/build/CMakeFiles/list_install_components.dir
+/home/work/Desktop/my-project/TvietKey/platforms/linux/build/CMakeFiles/install.dir
+/home/work/Desktop/my-project/TvietKey/platforms/linux/build/CMakeFiles/install/local.dir
+/home/work/Desktop/my-project/TvietKey/platforms/linux/build/CMakeFiles/install/strip.dir

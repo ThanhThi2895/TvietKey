@@ -4,11 +4,11 @@ Priority: optional
 Maintainer: Khaphan Space <khaphanspace@gmail.com>
 Build-Depends: debhelper-compat (= 13),
                cmake (>= 3.16),
-               extra-cmake-modules,
                libfcitx5core-dev (>= 5.0.0),
                libfcitx5config-dev (>= 5.0.0),
                libfcitx5utils-dev (>= 5.0.0),
                fcitx5-modules-dev (>= 5.0.0),
+               libxkbcommon-dev,
                gettext,
                cargo,
                rustc (>= 1.70.0),

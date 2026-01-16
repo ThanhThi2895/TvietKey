@@ -1,0 +1,24 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    remove|upgrade|deconfigure)
+        # Restart Fcitx5 if running to unload addon
+        if pgrep -x fcitx5 > /dev/null; then
+            echo "Restarting Fcitx5 to unload Gõ Nhanh addon..."
+            fcitx5-remote -r 2>/dev/null || true
+        fi
+        ;;
+
+    failed-upgrade)
+        ;;
+
+    *)
+        echo "prerm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+
+
+exit 0

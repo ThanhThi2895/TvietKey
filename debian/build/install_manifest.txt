@@ -1,0 +1,4 @@
+/usr/lib/x86_64-linux-gnu/fcitx5/gonhanh.so
+/usr/share/fcitx5/addon/gonhanh.conf
+/usr/share/fcitx5/addon/inputmethod/gonhanh.conf
+/usr/lib/x86_64-linux-gnu/libgonhanh_core.so

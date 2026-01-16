@@ -1,9 +1,0 @@
-# Addon configuration files
-platforms/linux/data/gonhanh-addon.conf usr/share/fcitx5/addon/
-platforms/linux/data/gonhanh.conf usr/share/fcitx5/inputmethod/
-
-# Environment template
-platforms/linux/data/90-gonhanh.conf.template usr/share/gonhanh/
-
-# CLI tool
-platforms/linux/scripts/gonhanh-cli.sh usr/bin/gn
